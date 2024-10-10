@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2024_07_24_204821) do
+ActiveRecord::Schema[7.1].define(version: 2024_10_07_171911) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gin"
   enable_extension "pg_stat_statements"
@@ -460,10 +460,13 @@ ActiveRecord::Schema[7.1].define(version: 2024_07_24_204821) do
     t.string "url"
     t.string "distribution_strategy"
     t.uuid "environment_id"
+    t.string "code"
     t.index "to_tsvector('simple'::regconfig, COALESCE((id)::text, ''::text))", name: "products_tsv_id_idx", using: :gist
     t.index "to_tsvector('simple'::regconfig, COALESCE((metadata)::text, ''::text))", name: "products_tsv_metadata_idx", using: :gist
     t.index "to_tsvector('simple'::regconfig, COALESCE((name)::text, ''::text))", name: "products_tsv_name_idx", using: :gist
+    t.index ["account_id", "code"], name: "index_products_on_account_id_and_code", unique: true
     t.index ["account_id", "created_at"], name: "index_products_on_account_id_and_created_at"
+    t.index ["code"], name: "index_products_on_code"
     t.index ["created_at"], name: "index_products_on_created_at", order: :desc
     t.index ["distribution_strategy"], name: "index_products_on_distribution_strategy"
     t.index ["environment_id"], name: "index_products_on_environment_id"
@@ -673,7 +676,8 @@ ActiveRecord::Schema[7.1].define(version: 2024_07_24_204821) do
     t.index ["release_platform_id"], name: "index_releases_on_release_platform_id"
     t.index ["semver_major", "semver_minor", "semver_patch", "semver_pre_word", "semver_pre_num", "semver_build_word", "semver_build_num"], name: "releases_sort_semver_components_idx", order: { semver_major: :desc, semver_minor: "DESC NULLS LAST", semver_patch: "DESC NULLS LAST", semver_pre_word: :desc, semver_pre_num: "DESC NULLS LAST", semver_build_word: "DESC NULLS LAST", semver_build_num: "DESC NULLS LAST" }
     t.index ["status"], name: "index_releases_on_status"
-    t.index ["tag", "account_id"], name: "index_releases_on_tag_and_account_id", unique: true, where: "(tag IS NOT NULL)"
+    t.index ["tag", "account_id", "product_id", "release_package_id"], name: "releases_tag_package_uniq_idx", unique: true, where: "((release_package_id IS NOT NULL) AND (tag IS NOT NULL))"
+    t.index ["tag", "account_id", "product_id"], name: "releases_tag_no_package_uniq_idx", unique: true, where: "((release_package_id IS NULL) AND (tag IS NOT NULL))"
     t.index ["version", "product_id", "account_id"], name: "releases_version_no_package_uniq_idx", unique: true, where: "((release_package_id IS NULL) AND ((api_version)::text <> '1.0'::text))"
     t.index ["version", "release_package_id", "product_id", "account_id"], name: "releases_version_package_uniq_idx", unique: true, where: "((release_package_id IS NOT NULL) AND ((api_version)::text <> '1.0'::text))"
   end

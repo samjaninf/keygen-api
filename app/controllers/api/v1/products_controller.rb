@@ -27,6 +27,7 @@ module Api::V1
         param :type, type: :string, inclusion: { in: %w[product products] }
         param :attributes, type: :hash do
           param :name, type: :string
+          param :code, type: :string, optional: true
           param :distribution_strategy, type: :string, optional: true
           param :url, type: :string, optional: true
           param :metadata, type: :metadata, allow_blank: true, optional: true
@@ -83,6 +84,7 @@ module Api::V1
         param :id, type: :string, optional: true, noop: true
         param :attributes, type: :hash do
           param :name, type: :string, optional: true
+          param :code, type: :string, optional: true
           param :distribution_strategy, type: :string, allow_nil: true, optional: true
           param :url, type: :string, allow_nil: true, optional: true
           param :metadata, type: :metadata, allow_blank: true, optional: true
@@ -136,9 +138,11 @@ module Api::V1
     def set_product
       scoped_products = authorized_scope(current_account.products)
 
-      @product = scoped_products.find(params[:id])
-
-      Current.resource = product
+      Current.resource = @product = FindByAliasService.call(
+        scoped_products,
+        id: params[:id],
+        aliases: :code,
+      )
     end
   end
 end
